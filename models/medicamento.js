@@ -5,6 +5,7 @@ const Schema  = mongoose.Schema;
 const medicamentoSchema = new Schema({
   
   nombre: String,
+  descripcion: String,
   precio: String,
   
   }

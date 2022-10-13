@@ -13,10 +13,10 @@ const user = 'nkarlezib';
 const password = 'GPTI1234';
 const url = `mongodb+srv://nkarlezib:${password}@cluster0.lbq3xfr.mongodb.net/?retryWrites=true&w=majority`;
 
-mongoose.connect(url,
-     {useNewUrlParser: true, useUnifiedTopology: true })
-     .then(()=> console.log('Base de datos conectada'))
-     .catch(e => console.log(e))
+//mongoose.connect(url,
+  //   {useNewUrlParser: true, useUnifiedTopology: true })
+    // .then(()=> console.log('Base de datos conectada'))
+     //.catch(e => console.log(e))
 
 
 const writestream = fs.createWriteStream("productos.csv")
@@ -33,10 +33,26 @@ async function init(){
     
     });
     writestream.write('Producto|Descripcion|Precio\n');
+
     const titulo = $('div.product-item-info').each((i,el)=> {
         const nombre = $(el).find('p.product-brand-name.truncate').text().trim();
         const descripcion = $(el).find('a.product-item-link').text().trim();
         const price = $(el).find('span.price').text().trim();
+
+        try {
+            const medicamentoDB = new Medicamento({
+                "nombre": nombre,
+                "descripcion": descripcion,
+                "precio": price
+                });
+            
+            medicamentoDB.save();
+    
+            
+        } catch (error) {
+            console.log('error', error)
+        }
+
         writestream.write(`${nombre}|${descripcion}|${price}\n`)
     });
 
@@ -78,5 +94,32 @@ async function main(){
     
     
 };
+
+async function cruz(){
+
+    const $ = await request({
+        uri: 'https://redfarma.cl/productos?familia=MEDICAMENTOS',
+        transform: body => cheerio.load(body),
+        jar: true
+    
+    });
+    writestream.write('Producto, Precio\n');
+    const nombre1 = $('div.listado-productos');
+    console.log(nombre1.html());
+    
+    const titulo = $('div.producto').each((i,el)=> {
+        
+        const nombre = $(el).find('a').html();
+        console.log(nombre);
+        //const descripcion = $(el).find('a.product-item-link').text().trim();
+        const price = $(el).find('div.precio-cantidad.sin-oferta').text().trim();
+        
+        //db.sales.insert({'nombre': `${nombre}`, 'Precio':`${price}`});
+
+        //writestream.write(`${nombre},${price}\n`)
+    });
+};
+
 //init();
-main();
+//main();
+cruz();
