@@ -7,7 +7,7 @@ const medicamentoSchema = new Schema({
   nombre: String,
   descripcion: String,
   precio: String,
-  
+  farmacia: String
   }
 );
 
