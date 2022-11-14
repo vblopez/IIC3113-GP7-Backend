@@ -3,6 +3,7 @@ const { find } = require("domutils");
 const request = require("request-promise");
 const { brotliDecompressSync } = require("zlib");
 const fs = require("fs-extra");
+var iconv = require("iconv-lite");
 
 const Medicamento = require("./models/medicamento")
 
@@ -17,6 +18,7 @@ mongoose.connect(url,
      {useNewUrlParser: true, useUnifiedTopology: true })
      .then(()=> console.log('Base de datos conectada'))
      .catch(e => console.log(e))
+
 
 
 const writestream = fs.createWriteStream("productos.csv")
@@ -45,26 +47,28 @@ async function init(){
             const nombre = $(el).find('p.product-brand-name.truncate').text().trim();
             const descripcion = $(el).find('a.product-item-link').text().trim();
             const price = $(el).find('span.price').text().trim();
-            console.log(nombre);
-            
+            const link = $(el).find('a.product.photo.product-item-photo').attr('href');
+            const imagen = $(el).find('span.product-image-wrapper').find("img").attr('src');
+            console.log(imagen)
 
             try {
                 const medicamentoDB = new Medicamento({
                     "nombre": nombre,
                     "descripcion": descripcion,
                     "precio": price,
-                    "farmacia": "Ahumada"
-
+                    "farmacia": "Ahumada",
+                    "link": link,
+                    "imagen": imagen
                     });
                 
-                //medicamentoDB.save();
+                medicamentoDB.save();
         
                 
             } catch (error) {
                 console.log('error', error)
             }
 
-            writestream.write(`${nombre}|${descripcion}|${price}|Ahumada\n`);
+            writestream.write(`${nombre}|${descripcion}|${price}|Ahumada\n|${link} `);
             
         });
 
@@ -77,32 +81,41 @@ async function init(){
     
 };
 async function main(){
-
     var page = 1;
     var next = true;
     while (next){
         const $ = await request({
-            uri: `https://www.drsimi.cl/medicamento.html?p=${page}`,
+            encoding: null,
+            uri: 'https://www.drsimi.cl/medicamento',
             transform: body => cheerio.load(body),
-            jar: true
-        
+            jar: true,
+            
         });
+
         writestream.write('Producto, Precio\n');
 
-        const next2 = $('li.item.pages-item-next');
-        if (next2.text() == false){
+        const next2 = $('div.vtex-button__label');
+        //console.log(next2.text())
+        if (next2 == false){ //arreglar
             next = false;
-        }
-        const titulo = $('div.product-item-info.type1').each((i,el)=> {
-            const nombre = $(el).find('a.product-item-link').text().trim();
-            //const descripcion = $(el).find('a.product-item-link').text().trim();
+            console.log("Falsete")
+        };
+        const hola = $('div.vtex-flex-layout-0-x-flexRow')
+        console.log(hola.html())
+        const titulo = $('div.vtex-product-summary-2-x-nameContainer flex items-start justify-center pv6').each((i,el)=> {
+            console.log("dentro")
+            const nombre = $(el).find('span').text().trim();
+            const descripcion = $(el).find('div.display: contents;').text().trim();
+            console.log(descripcion)
             const price = $(el).find('span.price').text().trim();
 
             try {
                 const medicamentoDB = new Medicamento({
                     "nombre": nombre,
                     "precio": price,
-                    "farmacia": "Drsimi"
+                    "farmacia": "Drsimi",
+                    //"link": //Rellenar,
+                    
                     });
                 
                 medicamentoDB.save();
@@ -112,13 +125,13 @@ async function main(){
                 console.log('error', error)
             }
             
-            //db.sales.insert({'nombre': `${nombre}`, 'Precio':`${price}`});
+            //db.sales.insert({'nombre': `${nombre}`, 'Precio':`${price}`, 'Farmacia':`DrSimi`});
 
             writestream.write(`${nombre},${price}|DRsimi\n`)
         });
     page = page +1;
-    console.log(page);
-    console.log("segunda");
+    //console.log(page);
+    //console.log("segunda");
     }
     
     
@@ -126,7 +139,7 @@ async function main(){
 
 async function cruz(){
 
-    var page = 70;
+    var page = 69;
     var next = true;
     while (next){
 
@@ -146,17 +159,20 @@ async function cruz(){
         const titulo = $('a.woocommerce-LoopProduct-link.woocommerce-loop-product__link').each((i,el)=> {
             
             const nombre = $(el).find('h2').html();
-            console.log(nombre);
             //const descripcion = $(el).find('a.product-item-link').text().trim();
             const price = $(el).find('span.woocommerce-Price-amount.amount').text().trim();
-            
+            const imagen = $(el).find('span.et_shop_image').find("img").attr('data-src');
+            const link =  $(el).attr('href');
+
             //db.sales.insert({'nombre': `${nombre}`, 'Precio':`${price}`});
 
             try {
                 const medicamentoDB = new Medicamento({
                     "nombre": nombre,
                     "precio": price,
-                    "farmacia": "Ecofarmacias"
+                    "farmacia": "Ecofarmacias",
+                    "link": link,
+                    "imagen": imagen
                     });
                 
                 medicamentoDB.save();
@@ -170,11 +186,12 @@ async function cruz(){
             writestream.write(`${nombre},${price}, "Ecofarmacias\n`)
         });
     page = page + 1
-    console.log(page);
-    console.log("tercera");
+
     }
 };
 
-init();
+//init();
 main();
-cruz();
+//cruz();
+
+
